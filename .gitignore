@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env
+.venv
+
+# VS Code
+.vscode/
+
+# Project Data
+# Ignore all data by default to avoid committing large files
+data/
+# But we might want to keep the raw sample if it is small and needed for tests, 
+# uncomment the following lines if you want to track the sample:
+# !data/raw/complaints_sample.csv
+# !data/processed/.gitkeep
+
+# Specfic large files (redundant if data/ is ignored, but good for safety)
+*.csv
+*.zip
+*.gz
+
+# Logs
+*.log
