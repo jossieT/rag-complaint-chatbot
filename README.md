@@ -1,6 +1,23 @@
 # RAG Complaint Chatbot
 
-An internal AI-powered application designed to analyze CFPB (Consumer Financial Protection Bureau) customer complaints using Retrieval-Augmented Generation (RAG). This project turns unstructured complaint data into actionable insights for financial internal teams.
+An internal AI-powered application designed to analyze CFPB customer complaints using Retrieval-Augmented Generation (RAG).
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    Data[Raw Complaint Data] --> Pre[Preprocessing src/preprocessing.py]
+    Pre --> Processed[Processed Data CSV]
+    Processed --> Index[Vector Indexing src/build_vector_store.py]
+    Index --> Store[(FAISS Vector Store)]
+
+    User[User Question] --> UI[Gradio app.py]
+    UI --> Pipe[RAG Pipeline src/rag_pipeline.py]
+    Store --> Pipe
+    Pipe --> LLM[LLM Generator flan-t5]
+    LLM --> Answer[Grounded Answer + Sources]
+    Answer --> UI
+```
 
 ## 🚀 Project Overview
 

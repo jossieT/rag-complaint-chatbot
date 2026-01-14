@@ -10,6 +10,7 @@ This module implements the core Retrieval-Augmented Generation (RAG) logic:
 
 import os
 import logging
+import yaml
 from typing import List, Dict, Any, Tuple
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -27,26 +28,40 @@ class RAGPipeline:
     
     def __init__(
         self, 
-        vector_store_path: str = "vector_store",
-        embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
-        top_k: int = 5
+        config_path: str = "config.yaml"
     ):
         """
         Initialize the RAG pipeline.
         
         Args:
-            vector_store_path: Path to the FAISS vector store
-            embedding_model: Name of the embedding model
-            top_k: Number of documents to retrieve
+            config_path: Path to the configuration YAML file
         """
-        self.vector_store_path = vector_store_path
-        self.embedding_model_name = embedding_model
-        self.top_k = top_k
+        self.config = self._load_config(config_path)
+        self.vector_store_path = self.config['paths']['vector_store']
+        self.embedding_model_name = self.config['models']['embeddings']
+        self.llm_model_name = self.config['models']['llm']
+        self.top_k = self.config['rag_params']['top_k']
+        
         self.vector_store = None
         self.embeddings = None
         
         # Load vector store
         self._load_vector_store()
+
+    def _load_config(self, config_path: str) -> Dict:
+        """Load the configuration from YAML."""
+        if not os.path.exists(config_path):
+            # Fallback defaults if config missing
+            return {
+                'paths': {'vector_store': 'vector_store'},
+                'models': {
+                    'embeddings': 'sentence-transformers/all-MiniLM-L6-v2',
+                    'llm': 'google/flan-t5-small'
+                },
+                'rag_params': {'top_k': 5, 'max_new_tokens': 200}
+            }
+        with open(config_path, 'r') as f:
+            return yaml.safe_load(f)
     
     def _load_vector_store(self):
         """Load the FAISS vector store and embedding model."""
@@ -183,7 +198,7 @@ Answer:"""
         self, 
         query: str, 
         use_huggingface: bool = True,
-        model_name: str = "google/flan-t5-small"
+        model_name: str = None
     ) -> Dict[str, Any]:
         """
         Generate an answer using the RAG pipeline.
@@ -191,11 +206,13 @@ Answer:"""
         Args:
             query: User's question
             use_huggingface: Whether to use HuggingFace inference
-            model_name: Name of the LLM to use
+            model_name: Name of the LLM to use (defaults to self.llm_model_name)
             
         Returns:
             Dictionary containing answer and source documents
         """
+        if model_name is None:
+            model_name = self.llm_model_name
         try:
             # Step 1: Retrieve relevant documents
             retrieved_docs = self.retrieve_relevant_complaints(query)
