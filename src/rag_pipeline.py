@@ -1,0 +1,369 @@
+"""
+RAG Pipeline for CrediTrust Financial Complaint Analysis
+
+This module implements the core Retrieval-Augmented Generation (RAG) logic:
+- Vector store loading
+- Query retrieval
+- Prompt engineering
+- Answer generation with LLM
+"""
+
+import os
+import logging
+from typing import List, Dict, Any, Tuple
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
+class RAGPipeline:
+    """
+    Complete RAG pipeline for complaint analysis.
+    """
+    
+    def __init__(
+        self, 
+        vector_store_path: str = "vector_store",
+        embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        top_k: int = 5
+    ):
+        """
+        Initialize the RAG pipeline.
+        
+        Args:
+            vector_store_path: Path to the FAISS vector store
+            embedding_model: Name of the embedding model
+            top_k: Number of documents to retrieve
+        """
+        self.vector_store_path = vector_store_path
+        self.embedding_model_name = embedding_model
+        self.top_k = top_k
+        self.vector_store = None
+        self.embeddings = None
+        
+        # Load vector store
+        self._load_vector_store()
+    
+    def _load_vector_store(self):
+        """Load the FAISS vector store and embedding model."""
+        try:
+            logger.info(f"Loading vector store from {self.vector_store_path}...")
+            
+            # Initialize embeddings
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=self.embedding_model_name
+            )
+            
+            # Load FAISS index
+            self.vector_store = FAISS.load_local(
+                self.vector_store_path,
+                self.embeddings,
+                allow_dangerous_deserialization=True  # Required for loading pickled data
+            )
+            
+            logger.info("Vector store loaded successfully.")
+            
+        except Exception as e:
+            logger.error(f"Failed to load vector store: {e}")
+            raise
+    
+    def retrieve_relevant_complaints(
+        self, 
+        query: str, 
+        k: int = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve the most relevant complaint chunks for a given query.
+        
+        Args:
+            query: User's question
+            k: Number of documents to retrieve (defaults to self.top_k)
+            
+        Returns:
+            List of dictionaries containing document content and metadata
+        """
+        if k is None:
+            k = self.top_k
+            
+        try:
+            logger.info(f"Retrieving top {k} documents for query: '{query[:50]}...'")
+            
+            # Perform similarity search
+            docs_with_scores = self.vector_store.similarity_search_with_score(
+                query, 
+                k=k
+            )
+            
+            # Format results
+            results = []
+            for doc, score in docs_with_scores:
+                result = {
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                    "similarity_score": float(score)
+                }
+                results.append(result)
+            
+            logger.info(f"Retrieved {len(results)} documents.")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Retrieval failed: {e}")
+            return []
+    
+    def _format_context(self, retrieved_docs: List[Dict[str, Any]]) -> str:
+        """
+        Format retrieved documents into a context string for the LLM.
+        
+        Args:
+            retrieved_docs: List of retrieved document dictionaries
+            
+        Returns:
+            Formatted context string
+        """
+        if not retrieved_docs:
+            return "No relevant complaint data found."
+        
+        context_parts = []
+        for i, doc in enumerate(retrieved_docs, 1):
+            metadata = doc["metadata"]
+            content = doc["content"]
+            
+            # Format each complaint excerpt
+            context_part = f"""
+--- Complaint Excerpt {i} ---
+Product: {metadata.get('product_category', 'N/A')}
+Issue: {metadata.get('issue', 'N/A')}
+Complaint ID: {metadata.get('complaint_id', 'N/A')}
+Date: {metadata.get('date_received', 'N/A')}
+
+Customer Narrative:
+{content}
+"""
+            context_parts.append(context_part)
+        
+        return "\n".join(context_parts)
+    
+    def _create_prompt(self, query: str, context: str) -> str:
+        """
+        Create the prompt for the LLM.
+        
+        Args:
+            query: User's question
+            context: Formatted context from retrieved documents
+            
+        Returns:
+            Complete prompt string
+        """
+        prompt = f"""You are a financial analyst assistant for CrediTrust Financial.
+Your task is to answer questions about customer complaints using ONLY the retrieved complaint excerpts below.
+
+IMPORTANT INSTRUCTIONS:
+- Base your answer ONLY on the provided context
+- Be concise and analytical
+- Cite specific issues or patterns you observe
+- If the context does not contain sufficient information to answer the question, clearly state: "I don't have enough information in the retrieved complaints to answer this question."
+- Do NOT add external knowledge or make assumptions beyond what's in the context
+
+Context:
+{context}
+
+Question:
+{query}
+
+Answer:"""
+        
+        return prompt
+    
+    def generate_answer(
+        self, 
+        query: str, 
+        use_huggingface: bool = True,
+        model_name: str = "google/flan-t5-small"
+    ) -> Dict[str, Any]:
+        """
+        Generate an answer using the RAG pipeline.
+        
+        Args:
+            query: User's question
+            use_huggingface: Whether to use HuggingFace inference
+            model_name: Name of the LLM to use
+            
+        Returns:
+            Dictionary containing answer and source documents
+        """
+        try:
+            # Step 1: Retrieve relevant documents
+            retrieved_docs = self.retrieve_relevant_complaints(query)
+            
+            if not retrieved_docs:
+                return {
+                    "answer": "I couldn't find any relevant complaint data to answer your question.",
+                    "sources": [],
+                    "query": query
+                }
+            
+            # Step 2: Format context
+            context = self._format_context(retrieved_docs)
+            
+            # Step 3: Create prompt
+            prompt = self._create_prompt(query, context)
+            
+            # Step 4: Generate answer
+            if use_huggingface:
+                answer = self._generate_with_huggingface(prompt, model_name)
+            else:
+                # Fallback: Use a simple extractive approach
+                answer = self._generate_extractive_answer(query, retrieved_docs)
+            
+            # Step 5: Return structured response
+            return {
+                "answer": answer,
+                "sources": retrieved_docs[:2],  # Return top 2 sources for display
+                "query": query,
+                "num_sources": len(retrieved_docs)
+            }
+            
+        except Exception as e:
+            logger.error(f"Answer generation failed: {e}")
+            return {
+                "answer": f"An error occurred while generating the answer: {str(e)}",
+                "sources": [],
+                "query": query
+            }
+    
+    def _generate_with_huggingface(self, prompt: str, model_name: str) -> str:
+        """
+        Generate answer using HuggingFace inference.
+        
+        Args:
+            prompt: Complete prompt
+            model_name: HuggingFace model name
+            
+        Returns:
+            Generated answer
+        """
+        try:
+            from transformers import pipeline
+            
+            logger.info(f"Generating answer with {model_name}...")
+            
+            # Initialize the pipeline
+            generator = pipeline(
+                "text2text-generation",
+                model=model_name,
+                max_length=512,
+                device=-1  # CPU
+            )
+            
+            # Generate
+            result = generator(prompt, max_new_tokens=200, do_sample=False)
+            answer = result[0]["generated_text"]
+            
+            return answer.strip()
+            
+        except Exception as e:
+            logger.warning(f"HuggingFace generation failed: {e}. Falling back to extractive method.")
+            return self._generate_extractive_answer(prompt.split("Question:")[-1].split("Answer:")[0].strip(), [])
+    
+    def _generate_extractive_answer(
+        self, 
+        query: str, 
+        retrieved_docs: List[Dict[str, Any]]
+    ) -> str:
+        """
+        Generate a simple extractive answer by summarizing retrieved documents.
+        This is a fallback method when LLM generation fails.
+        
+        Args:
+            query: User's question
+            retrieved_docs: Retrieved documents
+            
+        Returns:
+            Extractive answer
+        """
+        if not retrieved_docs:
+            return "No relevant complaint data found to answer this question."
+        
+        # Extract key information
+        products = set()
+        issues = set()
+        
+        for doc in retrieved_docs:
+            metadata = doc["metadata"]
+            if metadata.get("product_category"):
+                products.add(metadata["product_category"])
+            if metadata.get("issue"):
+                issues.add(metadata["issue"])
+        
+        # Create a simple summary
+        answer_parts = []
+        
+        if products:
+            answer_parts.append(f"Based on the retrieved complaints, the main products involved are: {', '.join(products)}.")
+        
+        if issues:
+            answer_parts.append(f"The primary issues reported include: {', '.join(list(issues)[:3])}.")
+        
+        answer_parts.append(f"This analysis is based on {len(retrieved_docs)} relevant complaint(s).")
+        
+        return " ".join(answer_parts)
+    
+    def query(self, user_question: str) -> Dict[str, Any]:
+        """
+        Main entry point for querying the RAG system.
+        
+        Args:
+            user_question: User's question
+            
+        Returns:
+            Complete response with answer and sources
+        """
+        return self.generate_answer(user_question)
+
+
+def main():
+    """Test the RAG pipeline with sample queries."""
+    print("=" * 80)
+    print("RAG Pipeline Test")
+    print("=" * 80)
+    
+    # Initialize pipeline
+    rag = RAGPipeline()
+    
+    # Test queries
+    test_queries = [
+        "Why are customers unhappy with Credit Cards?",
+        "What are the main issues with Money Transfers?",
+        "What problems do customers face with Personal Loans?"
+    ]
+    
+    for query in test_queries:
+        print(f"\n{'=' * 80}")
+        print(f"Query: {query}")
+        print(f"{'=' * 80}")
+        
+        response = rag.query(query)
+        
+        print(f"\nAnswer: {response['answer']}")
+        print(f"\nNumber of sources: {response['num_sources']}")
+        
+        if response['sources']:
+            print("\nTop Sources:")
+            for i, source in enumerate(response['sources'], 1):
+                print(f"\n--- Source {i} ---")
+                print(f"Product: {source['metadata'].get('product_category', 'N/A')}")
+                print(f"Issue: {source['metadata'].get('issue', 'N/A')}")
+                print(f"Excerpt: {source['content'][:200]}...")
+    
+    print(f"\n{'=' * 80}")
+    print("Test Complete!")
+    print("=" * 80)
+
+
+if __name__ == "__main__":
+    main()

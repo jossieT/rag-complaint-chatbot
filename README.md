@@ -8,8 +8,8 @@ The project is being developed in phases:
 
 - **Task 1**: Data Preprocessing & Cleaning.
 - **Task 2**: Text Chunking, Embedding generation, and Vector Store Indexing.
-- **Task 3** (Planned): Retrieval & RAG Pipeline.
-- **Task 4** (Planned): Deployment & User Interface.
+- **Task 3**: Retrieval & RAG Pipeline Implementation.
+- **Task 4**: Interactive Chat Interface with Gradio.
 
 ## 🛠️ Installation & Setup
 
@@ -23,7 +23,7 @@ cd rag-complaint-chatbot
 ### 2. Install Dependencies
 
 ```bash
-pip install pandas scikit-learn langchain-text-splitters langchain-huggingface langchain-community faiss-cpu sentence-transformers
+pip install pandas scikit-learn langchain-text-splitters langchain-huggingface langchain-community faiss-cpu sentence-transformers gradio transformers torch
 ```
 
 **Note for Windows Users**:
@@ -40,12 +40,17 @@ rag-complaint-chatbot/
 ├── data/
 │   ├── raw/             # Original CFPB dataset (CSV)
 │   └── processed/       # Cleaned and filtered data
+├── docs/                # Project documentation and reports
+│   ├── evaluation_report.md
+│   └── walkthrough.md
 ├── notebooks/           # Jupyter notebooks for EDA and testing
 ├── src/                 # Source code
 │   ├── preprocessing.py         # Cleaning logic
-│   ├── process_full_dataset.py  # Full pipeline execution
-│   └── build_vector_store.py    # Chunking & Indexing
+│   ├── build_vector_store.py    # Chunking & Indexing
+│   ├── rag_pipeline.py          # RAG Retrieval & Generation
+│   └── evaluate_rag.py          # Pipeline Evaluation
 ├── vector_store/        # Persisted FAISS index files
+├── app.py               # Gradio Chat Interface
 ├── README.md
 └── .gitignore           # Configured to ignore large data files
 ```
@@ -54,34 +59,28 @@ rag-complaint-chatbot/
 
 ### Phase 1: Data Preprocessing
 
-Executes broad cleaning on the 6GB+ CFPB dataset.
-
-- **Filter**: Targets "Credit Cards", "Personal Loans", "Savings Accounts", and "Money Transfers".
-- **Clean**: Lowercasing, removing boilerplate phrases, and stripping special characters.
-
-**Run command:**
-
-```bash
-python src/process_full_dataset.py
-```
+Executes broad cleaning on the CFPB dataset.
+**Run command:** `python src/process_full_dataset.py`
 
 ### Phase 2: Vector Store Indexing
 
 Transform text into a searchable semantic index.
+**Run command:** `python src/build_vector_store.py`
 
-- **Sampling**: Stratified sample of 15,000 complaints to maintain category proportions.
-- **Chunking**: `RecursiveCharacterTextSplitter` (size: 500, overlap: 50).
-- **Embedding**: `sentence-transformers/all-MiniLM-L6-v2`.
-- **Indexing**: `FAISS` for high-performance similarity search.
+### Phase 3: RAG Core & Evaluation
 
-**Run command:**
+Builds the retrieval-augmented generation logic and evaluates it.
+**Run command:** `python src/evaluate_rag.py`
 
-```bash
-python src/build_vector_store.py
-```
+### Phase 4: Interactive Chat Interface
+
+Launches the web UI for querying customer complaints.
+**Run command:** `python app.py`
 
 ## 📝 Deliverables
 
 - Cleaned dataset in `data/processed/`.
 - Searchable vector store in `vector_store/`.
-- Modular, documented Python scripts in `src/`.
+- Functional RAG pipeline in `src/rag_pipeline.py`.
+- Interactive web UI in `app.py`.
+- Evaluation report in `docs/evaluation_report.md`.
