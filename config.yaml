@@ -1,0 +1,19 @@
+# System Configuration for RAG Complaint Chatbot
+
+paths:
+  vector_store: "vector_store"
+  data_processed: "data/processed/filtered_complaints.csv"
+  evaluation_report: "docs/evaluation_report.md"
+
+models:
+  embeddings: "sentence-transformers/all-MiniLM-L6-v2"
+  llm: "google/flan-t5-small"
+
+rag_params:
+  top_k: 5
+  max_new_tokens: 200
+
+ui:
+  server_name: "0.0.0.0"
+  server_port: 7860
+  title: "CrediTrust Complaint Analyst"

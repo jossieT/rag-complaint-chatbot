@@ -139,4 +139,15 @@ with gr.Blocks(css=custom_css, title="CrediTrust Complaint Analyst") as demo:
 
 # Launch the app
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=False)
+    import yaml
+    config_path = "config.yaml"
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        server_name = config['ui']['server_name']
+        server_port = config['ui']['server_port']
+    else:
+        server_name = "0.0.0.0"
+        server_port = 7860
+        
+    demo.launch(server_name=server_name, server_port=server_port, share=False)
