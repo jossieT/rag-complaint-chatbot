@@ -145,53 +145,28 @@ class RAGPipeline:
         
         context_parts = []
         for i, doc in enumerate(retrieved_docs, 1):
-            metadata = doc["metadata"]
             content = doc["content"]
+            # Simplified metadata for the model
+            category = doc["metadata"].get('product_category', 'N/A')
+            issue = doc["metadata"].get('issue', 'N/A')
             
-            # Format each complaint excerpt
-            context_part = f"""
---- Complaint Excerpt {i} ---
-Product: {metadata.get('product_category', 'N/A')}
-Issue: {metadata.get('issue', 'N/A')}
-Complaint ID: {metadata.get('complaint_id', 'N/A')}
-Date: {metadata.get('date_received', 'N/A')}
-
-Customer Narrative:
-{content}
-"""
+            context_part = f"Source {i} (Product: {category}, Issue: {issue}): {content}"
             context_parts.append(context_part)
         
-        return "\n".join(context_parts)
+        return "\n\n".join(context_parts)
     
     def _create_prompt(self, query: str, context: str) -> str:
         """
         Create the prompt for the LLM.
-        
-        Args:
-            query: User's question
-            context: Formatted context from retrieved documents
-            
-        Returns:
-            Complete prompt string
         """
-        prompt = f"""You are a financial analyst assistant for CrediTrust Financial.
-Your task is to answer questions about customer complaints using ONLY the retrieved complaint excerpts below.
-
-IMPORTANT INSTRUCTIONS:
-- Base your answer ONLY on the provided context
-- Be concise and analytical
-- Cite specific issues or patterns you observe
-- If the context does not contain sufficient information to answer the question, clearly state: "I don't have enough information in the retrieved complaints to answer this question."
-- Do NOT add external knowledge or make assumptions beyond what's in the context
-
-Context:
-{context}
-
-Question:
-{query}
-
-Answer:"""
+        # Prioritize the question and instructions in case of truncation
+        prompt = f"""QUESTION: {query}
         
+ANSWER THE ABOVE QUESTION USING THESE COMPLAINT EXCERPTS:
+{context[:1500]}  # Hard limit to prevent total truncation
+
+If the answer is not in the excerpts, say "Information not available."
+"""
         return prompt
     
     def generate_answer(
