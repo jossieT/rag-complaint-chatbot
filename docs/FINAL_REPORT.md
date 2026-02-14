@@ -10,7 +10,7 @@ Build an internal AI-powered application to analyze CFPB customer complaints usi
 
 ### EDA Findings
 
-The exploratory data analysis revealed a significant volume of consumer complaints, with over 9.6 million records initially processed from the full CFPB dataset. Filtering for the five target products (Credit card, Personal loan, Savings account, and Money transfers) and removing records without consumer narratives resulted in a refined dataset of approximately 454,472 high-quality entries. This filtering ensured that the RAG system's knowledge base remains strictly relevant to the intended business domains.
+The exploratory data analysis revealed a significant volume of consumer complaints, with over 9.6 million records initially processed from the full CFPB dataset. Filtering for the target products and removing records without consumer narratives resulted in a massive dataset of over **1.37 million high-quality entries**. This scale ensures comprehensive coverage of consumer issues and historical trends.
 
 Analysis of the product distribution showed that "Credit Card" and "Checking or savings account" complaints represent the largest segments, followed by "Personal Loans" and "Money transfers." This distribution highlights a diverse range of consumer friction points, from unauthorized charges to account access issues, necessitating a robust semantic search capability.
 
@@ -22,7 +22,7 @@ Narrative length analysis indicated that the majority of complaints range betwee
 
 ### Sampling Strategy
 
-To balance computational efficiency with representative coverage, a stratified sample of **15,000 complaints** was extracted from the cleaned dataset. Stratification was performed based on the `Product` category to ensure that even lower-volume products (like Money Transfers) are proportionally represented in the vector store, preventing the system from becoming biased toward high-volume categories like Credit Cards.
+To maximize organizational intelligence, the system successfully transitioned from a sampled environment to a full-scale deployment using **1,375,327 complaint records**. This was achieved by ingesting pre-computed embeddings provided in Parquet format, allowing the system to leverage high-volume data without the prohibitive computational cost of local embedding generation.
 
 ### Text Chunking
 
@@ -72,4 +72,4 @@ The application features a professional Gradio-based web interface designed for 
 
 ## 6. Conclusion
 
-The CrediTrust RAG Complaint Chatbot successfully bridges the gap between raw unstructured data and actionable insights. By combining robust preprocessing, stratified sampling, and semantic retrieval, the system provides a powerful tool for analyzing consumer sentiment and identifying systemic issues in financial products.
+The CrediTrust RAG Complaint Chatbot successfully bridges the gap between raw unstructured data and actionable insights at a massive scale. By ingesting over 1.37 million records and optimizing for low-resource retrieval with a small but effective LLM, the system provides a robust tool for analyzing global consumer sentiment and identifying systemic risks across the financial portfolio.
