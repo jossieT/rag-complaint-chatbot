@@ -315,17 +315,28 @@ If the answer is not in the excerpts, say "Information not available."
         Returns:
             Complete response with answer and sources
         """
+        if not user_question or not isinstance(user_question, str):
+            logger.warning("Invalid or empty user question provided.")
+            return {
+                "answer": "Please provide a valid question.",
+                "sources": [],
+                "query": ""
+            }
         return self.generate_answer(user_question)
 
 
 def main():
     """Test the RAG pipeline with sample queries."""
-    print("=" * 80)
-    print("RAG Pipeline Test")
-    print("=" * 80)
+    logger.info("=" * 80)
+    logger.info("RAG Pipeline Test")
+    logger.info("=" * 80)
     
     # Initialize pipeline
-    rag = RAGPipeline()
+    try:
+        rag = RAGPipeline()
+    except Exception as e:
+        logger.error(f"Failed to initialize RAG pipeline: {e}")
+        return
     
     # Test queries
     test_queries = [
@@ -335,26 +346,26 @@ def main():
     ]
     
     for query in test_queries:
-        print(f"\n{'=' * 80}")
-        print(f"Query: {query}")
-        print(f"{'=' * 80}")
+        logger.info(f"\n{'=' * 80}")
+        logger.info(f"Query: {query}")
+        logger.info(f"{'=' * 80}")
         
         response = rag.query(query)
         
-        print(f"\nAnswer: {response['answer']}")
-        print(f"\nNumber of sources: {response['num_sources']}")
+        logger.info(f"\nAnswer: {response['answer']}")
+        logger.info(f"\nNumber of sources: {response['num_sources']}")
         
         if response['sources']:
-            print("\nTop Sources:")
+            logger.info("\nTop Sources:")
             for i, source in enumerate(response['sources'], 1):
-                print(f"\n--- Source {i} ---")
-                print(f"Product: {source['metadata'].get('product_category', 'N/A')}")
-                print(f"Issue: {source['metadata'].get('issue', 'N/A')}")
-                print(f"Excerpt: {source['content'][:200]}...")
+                logger.info(f"\n--- Source {i} ---")
+                logger.info(f"Product: {source['metadata'].get('product_category', 'N/A')}")
+                logger.info(f"Issue: {source['metadata'].get('issue', 'N/A')}")
+                logger.info(f"Excerpt: {source['content'][:200]}...")
     
-    print(f"\n{'=' * 80}")
-    print("Test Complete!")
-    print("=" * 80)
+    logger.info(f"\n{'=' * 80}")
+    logger.info("Test Complete!")
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":
