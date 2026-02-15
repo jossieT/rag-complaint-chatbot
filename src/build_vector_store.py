@@ -133,7 +133,7 @@ def main():
         # 3. Build and Persist
         build_and_save_vector_store(documents, MODEL_NAME, VECTOR_STORE_DIR)
         
-        print(f"\nTask 2 Complete!")
+        print(f"\nVector store build Complete!")
         print(f"Vector store saved at: {VECTOR_STORE_DIR}")
         
     except Exception as e:
