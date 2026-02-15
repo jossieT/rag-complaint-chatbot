@@ -1,5 +1,7 @@
 # RAG Complaint Chatbot
 
+![CI Status](https://github.com/jossieT/rag-complaint-chatbot/actions/workflows/ci.yml/badge.svg)
+
 An internal AI-powered application designed to analyze CFPB customer complaints using Retrieval-Augmented Generation (RAG).
 
 ## 🏗️ Architecture
@@ -40,7 +42,7 @@ cd rag-complaint-chatbot
 ### 2. Install Dependencies
 
 ```bash
-pip install pandas scikit-learn langchain-text-splitters langchain-huggingface langchain-community faiss-cpu sentence-transformers gradio transformers torch
+pip install -r requirements.txt
 ```
 
 **Note for Windows Users**:

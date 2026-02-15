@@ -49,4 +49,13 @@ data/
 *.gz
 
 # Logs
-*.log
+*.log 
+
+# Docs
+docs/
+
+# Vector store
+vector_store/
+.faiss
+.pkl
+    

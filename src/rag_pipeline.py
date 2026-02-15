@@ -145,53 +145,28 @@ class RAGPipeline:
         
         context_parts = []
         for i, doc in enumerate(retrieved_docs, 1):
-            metadata = doc["metadata"]
             content = doc["content"]
+            # Simplified metadata for the model
+            category = doc["metadata"].get('product_category', 'N/A')
+            issue = doc["metadata"].get('issue', 'N/A')
             
-            # Format each complaint excerpt
-            context_part = f"""
---- Complaint Excerpt {i} ---
-Product: {metadata.get('product_category', 'N/A')}
-Issue: {metadata.get('issue', 'N/A')}
-Complaint ID: {metadata.get('complaint_id', 'N/A')}
-Date: {metadata.get('date_received', 'N/A')}
-
-Customer Narrative:
-{content}
-"""
+            context_part = f"Source {i} (Product: {category}, Issue: {issue}): {content}"
             context_parts.append(context_part)
         
-        return "\n".join(context_parts)
+        return "\n\n".join(context_parts)
     
     def _create_prompt(self, query: str, context: str) -> str:
         """
         Create the prompt for the LLM.
-        
-        Args:
-            query: User's question
-            context: Formatted context from retrieved documents
-            
-        Returns:
-            Complete prompt string
         """
-        prompt = f"""You are a financial analyst assistant for CrediTrust Financial.
-Your task is to answer questions about customer complaints using ONLY the retrieved complaint excerpts below.
-
-IMPORTANT INSTRUCTIONS:
-- Base your answer ONLY on the provided context
-- Be concise and analytical
-- Cite specific issues or patterns you observe
-- If the context does not contain sufficient information to answer the question, clearly state: "I don't have enough information in the retrieved complaints to answer this question."
-- Do NOT add external knowledge or make assumptions beyond what's in the context
-
-Context:
-{context}
-
-Question:
-{query}
-
-Answer:"""
+        # Prioritize the question and instructions in case of truncation
+        prompt = f"""QUESTION: {query}
         
+ANSWER THE ABOVE QUESTION USING THESE COMPLAINT EXCERPTS:
+{context[:1500]}  # Hard limit to prevent total truncation
+
+If the answer is not in the excerpts, say "Information not available."
+"""
         return prompt
     
     def generate_answer(
@@ -340,17 +315,28 @@ Answer:"""
         Returns:
             Complete response with answer and sources
         """
+        if not user_question or not isinstance(user_question, str):
+            logger.warning("Invalid or empty user question provided.")
+            return {
+                "answer": "Please provide a valid question.",
+                "sources": [],
+                "query": ""
+            }
         return self.generate_answer(user_question)
 
 
 def main():
     """Test the RAG pipeline with sample queries."""
-    print("=" * 80)
-    print("RAG Pipeline Test")
-    print("=" * 80)
+    logger.info("=" * 80)
+    logger.info("RAG Pipeline Test")
+    logger.info("=" * 80)
     
     # Initialize pipeline
-    rag = RAGPipeline()
+    try:
+        rag = RAGPipeline()
+    except Exception as e:
+        logger.error(f"Failed to initialize RAG pipeline: {e}")
+        return
     
     # Test queries
     test_queries = [
@@ -360,26 +346,26 @@ def main():
     ]
     
     for query in test_queries:
-        print(f"\n{'=' * 80}")
-        print(f"Query: {query}")
-        print(f"{'=' * 80}")
+        logger.info(f"\n{'=' * 80}")
+        logger.info(f"Query: {query}")
+        logger.info(f"{'=' * 80}")
         
         response = rag.query(query)
         
-        print(f"\nAnswer: {response['answer']}")
-        print(f"\nNumber of sources: {response['num_sources']}")
+        logger.info(f"\nAnswer: {response['answer']}")
+        logger.info(f"\nNumber of sources: {response['num_sources']}")
         
         if response['sources']:
-            print("\nTop Sources:")
+            logger.info("\nTop Sources:")
             for i, source in enumerate(response['sources'], 1):
-                print(f"\n--- Source {i} ---")
-                print(f"Product: {source['metadata'].get('product_category', 'N/A')}")
-                print(f"Issue: {source['metadata'].get('issue', 'N/A')}")
-                print(f"Excerpt: {source['content'][:200]}...")
+                logger.info(f"\n--- Source {i} ---")
+                logger.info(f"Product: {source['metadata'].get('product_category', 'N/A')}")
+                logger.info(f"Issue: {source['metadata'].get('issue', 'N/A')}")
+                logger.info(f"Excerpt: {source['content'][:200]}...")
     
-    print(f"\n{'=' * 80}")
-    print("Test Complete!")
-    print("=" * 80)
+    logger.info(f"\n{'=' * 80}")
+    logger.info("Test Complete!")
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ models:
   llm: "google/flan-t5-small"
 
 rag_params:
-  top_k: 5
+  top_k: 3
   max_new_tokens: 200
 
 ui:

@@ -1,0 +1,15 @@
+pandas
+scikit-learn
+langchain-text-splitters
+langchain-huggingface
+langchain-community
+faiss-cpu
+sentence-transformers
+gradio
+transformers
+torch --index-url https://download.pytorch.org/whl/cpu
+pyyaml
+pyarrow
+pytest
+pytest-cov
+flake8
