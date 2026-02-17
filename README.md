@@ -1,7 +1,5 @@
 # RAG Complaint Chatbot
 
-![CI Status](https://github.com/jossieT/rag-complaint-chatbot/actions/workflows/ci.yml/badge.svg)
-
 An internal AI-powered application designed to analyze CFPB customer complaints using Retrieval-Augmented Generation (RAG).
 
 ## Business Problem
@@ -68,7 +66,7 @@ rag-complaint-chatbot/
 
 ## Demo
 
-_[Insert GIF or Screenshot of the Gradio Dashboard here]_
+_[![Gradio Dashboard Demo](image.png)]_
 
 > _The dashboard features a query input, an AI-generated answer, and an "Evidence Panel" showing the raw complaint excerpts used for the answer._
 
@@ -105,10 +103,10 @@ graph TD
 - **Hybrid Search:** Combine semantic vector search with keyword-based (BM25) search for better precision on specific terms.
 - **Cloud Deployment:** Containerize with Docker and deploy to AWS/Azure for broader access.
 
-## Author
+## 👤 Author
 
-**Jose**
+**Yosef Teshome**  
+AI Engineer | Finance-Focused ML Systems
 
-- LinkedIn: [Your Profile Link]
-- Email: [Your Email]
-- Portfolio: [Your Portfolio Link]
+- 🔗 LinkedIn: [linkedin.com/in/yosef-teshome-96516b188](https://www.linkedin.com/in/yosef-teshome-96516b188/)
+- 📧 Email: [joseteshe2017@gmail.com](mailto:joseteshe2017@gmail.com)
