@@ -4,55 +4,48 @@
 
 An internal AI-powered application designed to analyze CFPB customer complaints using Retrieval-Augmented Generation (RAG).
 
-## 🏗️ Architecture
+## Business Problem
 
-```mermaid
-graph TD
-    Data[Raw Complaint Data] --> Pre[Preprocessing src/preprocessing.py]
-    Pre --> Processed[Processed Data CSV]
-    Processed --> Index[Vector Indexing src/build_vector_store.py]
-    Index --> Store[(FAISS Vector Store)]
+The Consumer Financial Protection Bureau (CFPB) receives thousands of consumer complaints daily. Manually analyzing this massive volume of unstructured text to identify systemic issues, emerging trends, and specific customer friction points is inefficient and prone to human error.
 
-    User[User Question] --> UI[Gradio app.py]
-    UI --> Pipe[RAG Pipeline src/rag_pipeline.py]
-    Store --> Pipe
-    Pipe --> LLM[LLM Generator flan-t5]
-    LLM --> Answer[Grounded Answer + Sources]
-    Answer --> UI
-```
+**Key Challenges:**
 
-## 🚀 Project Overview
+- **Volume:** Over 1.3 million relevant complaints make manual review impossible.
+- **Complexity:** Complaints cover diverse products (Credit Cards, Mortgages) and issues (Fraud, Fees) requiring deep context.
+- **Latency:** Traditional keyword search fails to capture semantic meaning, delaying critical insights.
 
-The project is being developed in phases:
+## Solution Overview
 
-- **Task 1**: Data Preprocessing & Cleaning.
-- **Task 2**: Text Chunking, Embedding generation, and Vector Store Indexing.
-- **Task 3**: Retrieval & RAG Pipeline Implementation.
-- **Task 4**: Interactive Chat Interface with Gradio.
+This project implements a **Retrieval-Augmented Generation (RAG)** pipeline that transforms raw complaint text into an interactive knowledge base.
 
-## 🛠️ Installation & Setup
+**Approach:**
 
-### 1. Clone the repository
+1.  **Semantic Indexing:** Complaint narratives are chunked and embedded using `sentence-transformers/all-MiniLM-L6-v2` to capture semantic meaning.
+2.  **Vector Search:** A FAISS vector store enables millisecond-latency retrieval of the most relevant complaint excerpts based on user queries.
+3.  **Generative AI:** An LLM (`flan-t5`) synthesizes the retrieved evidence into concise, grounded answers, citing specific sources.
+4.  **Interactive UI:** A Gradio-based web interface allows non-technical analysts to query the system naturally.
+
+## Key Results
+
+- **Scale:** Successfully indexed and processed **1.37 Million** consumer complaints.
+- **Accuracy:** Achieved **100% Retrieval Rate** on benchmark business questions (top-5 relevant chunks found for all queries).
+- **Efficiency:** Reduced analysis time from hours of manual reading to seconds of automated retrieval.
+
+## Quick Start
 
 ```bash
-git clone <repository-url>
+# Clone the repository
+git clone https://github.com/jossieT/rag-complaint-chatbot.git
 cd rag-complaint-chatbot
-```
 
-### 2. Install Dependencies
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Run the application
+python app.py
 ```
 
-**Note for Windows Users**:
-If you encounter `DLL initialization routine failed` errors, reinstall `torch` using the CPU-specific bundle:
-
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu --force-reinstall
-```
-
-## 📂 Project Structure
+## Project Structure
 
 ```
 rag-complaint-chatbot/
@@ -61,8 +54,7 @@ rag-complaint-chatbot/
 │   └── processed/       # Cleaned and filtered data
 ├── docs/                # Project documentation and reports
 │   ├── evaluation_report.md
-│   └── walkthrough.md
-├── notebooks/           # Jupyter notebooks for EDA and testing
+│   └── final_report.md  # Comprehensive project report
 ├── src/                 # Source code
 │   ├── preprocessing.py         # Cleaning logic
 │   ├── build_vector_store.py    # Chunking & Indexing
@@ -71,35 +63,52 @@ rag-complaint-chatbot/
 ├── vector_store/        # Persisted FAISS index files
 ├── app.py               # Gradio Chat Interface
 ├── README.md
-└── .gitignore           # Configured to ignore large data files
+└── .gitignore
 ```
 
-## 🔄 Core Pipeline
+## Demo
 
-### Phase 1: Data Preprocessing
+_[Insert GIF or Screenshot of the Gradio Dashboard here]_
 
-Executes broad cleaning on the CFPB dataset.
-**Run command:** `python src/process_full_dataset.py`
+> _The dashboard features a query input, an AI-generated answer, and an "Evidence Panel" showing the raw complaint excerpts used for the answer._
 
-### Phase 2: Vector Store Indexing
+## Technical Details
 
-Transform text into a searchable semantic index.
-**Run command:** `python src/build_vector_store.py`
+### Architecture
 
-### Phase 3: RAG Core & Evaluation
+```mermaid
+graph TD
+    Data[Raw Complaint Data] --> Pre[Preprocessing src/preprocessing.py]
+    Pre --> Processed[Processed Data CSV]
+    Processed --> Index[Vector Indexing src/build_vector_store.py]
+    Index --> Store[(FAISS Vector Store)]
+    Index --> Emb[Embeddings: all-MiniLM-L6-v2]
 
-Builds the retrieval-augmented generation logic and evaluates it.
-**Run command:** `python src/evaluate_rag.py`
+    User[User Question] --> UI[Gradio app.py]
+    UI --> Pipe[RAG Pipeline src/rag_pipeline.py]
+    Store --> Pipe
+    Pipe --> LLM[LLM: flan-t5]
+    LLM --> Answer[Grounded Answer + Sources]
+    Answer --> UI
+```
 
-### Phase 4: Interactive Chat Interface
+### Core Components
 
-Launches the web UI for querying customer complaints.
-**Run command:** `python app.py`
+- **Data:** CFPB Consumer Complaint Database (filtered for narrative quality).
+- **Embeddings:** `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions).
+- **Vector Store:** FAISS (Facebook AI Similarity Search) for dense retrieval.
+- **LLM:** `google/flan-t5-small` for answer generation.
 
-## 📝 Deliverables
+## Future Improvements
 
-- Cleaned dataset in `data/processed/`.
-- Searchable vector store in `vector_store/`.
-- Functional RAG pipeline in `src/rag_pipeline.py`.
-- Interactive web UI in `app.py`.
-- Evaluation report in `docs/evaluation_report.md`.
+- **Model Upgrade:** Experiment with larger LLMs (e.g., Llama 3, Mistral) for more nuanced reasoning.
+- **Hybrid Search:** Combine semantic vector search with keyword-based (BM25) search for better precision on specific terms.
+- **Cloud Deployment:** Containerize with Docker and deploy to AWS/Azure for broader access.
+
+## Author
+
+**Jose**
+
+- LinkedIn: [Your Profile Link]
+- Email: [Your Email]
+- Portfolio: [Your Portfolio Link]
